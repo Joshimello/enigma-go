@@ -1,0 +1,45 @@
+//go:build windows
+
+package commands
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/joshimello/enigma-go/enigma"
+	"github.com/joshimello/enigma-go/types"
+	"github.com/urfave/cli/v3"
+)
+
+func DetectDevice() *cli.Command {
+	return &cli.Command{
+		Name: "detect",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
+			if !ok {
+				fmt.Println("Context error")
+				os.Exit(1)
+			}
+
+			res, err := enigma.Detect(enigmaContext.DLL)
+
+			if !res {
+				enigmaContext.Result = &types.EnigmaResponse{
+					Status:  "error",
+					Message: err.Error(),
+					Data:    nil,
+				}
+				return nil
+			}
+
+			enigmaContext.Result = &types.EnigmaResponse{
+				Status:  "success",
+				Message: enigma.GetCodeMessage(0),
+				Data:    nil,
+			}
+
+			return nil
+		},
+	}
+}
