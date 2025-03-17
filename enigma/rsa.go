@@ -96,6 +96,191 @@ func ImportKey(dll *syscall.DLL, customID string, pubKeyN string, pubKeyE string
 	return true, keyIDStr, nil
 }
 
+func SetTransKey(dll *syscall.DLL, pubKeyN string, pubKeyE string) (bool, string, error) {
+	setTransKeyProc, err := dll.FindProc("set_trans_public_key")
+	if err != nil {
+		return false, "", err
+	}
+
+	pubKeyNBytes, err := base64.StdEncoding.DecodeString(pubKeyN)
+	if err != nil {
+		return false, "", err
+	}
+
+	pubKeyEBytes, err := base64.StdEncoding.DecodeString(pubKeyE)
+	if err != nil {
+		return false, "", err
+	}
+
+	pubKeyNBuffer := make([]byte, 256)
+	copy(pubKeyNBuffer, pubKeyNBytes)
+
+	pubKeyEBuffer := make([]byte, 256)
+	if len(pubKeyEBytes) < 256 {
+		copy(pubKeyEBuffer[256-len(pubKeyEBytes):], pubKeyEBytes)
+	} else {
+		copy(pubKeyEBuffer, pubKeyEBytes)
+	}
+
+	r1, _, _ := setTransKeyProc.Call(
+		uintptr(unsafe.Pointer(&pubKeyNBuffer[0])),
+		uintptr(unsafe.Pointer(&pubKeyEBuffer[0])),
+	)
+
+	if r1 != 0 {
+		return false, "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	return true, "TRANSKEY", nil
+}
+
+func RSAEncrypt(dll *syscall.DLL, keyID string, message string) (bool, string, error) {
+	rsaEncryptProc, err := dll.FindProc("rsa_encrypt")
+	if err != nil {
+		return false, "", err
+	}
+
+	keyIDBytes := make([]byte, 8)
+	copy(keyIDBytes, []byte(keyID))
+
+	messageBytes := []byte(message)
+	messageLength := len(messageBytes)
+
+	encryptedMessage := make([]byte, 256)
+
+	r1, _, _ := rsaEncryptProc.Call(
+		uintptr(unsafe.Pointer(&keyIDBytes[0])),
+		uintptr(unsafe.Pointer(&messageBytes[0])),
+		uintptr(messageLength),
+		uintptr(unsafe.Pointer(&encryptedMessage[0])),
+	)
+
+	if r1 != 0 {
+		return false, "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	encryptedMessageStr := base64.StdEncoding.EncodeToString(encryptedMessage)
+
+	return true, encryptedMessageStr, nil
+}
+
+func RSADecrypt(dll *syscall.DLL, keyID string, cipher string) (bool, string, error) {
+	rsaDecryptProc, err := dll.FindProc("rsa_decrypt")
+	if err != nil {
+		return false, "", err
+	}
+
+	keyIDBytes := make([]byte, 8)
+	copy(keyIDBytes, []byte(keyID))
+
+	cipherBytes, err := base64.StdEncoding.DecodeString(cipher)
+	if err != nil {
+		return false, "", err
+	}
+
+	message := make([]byte, 256)
+	messageLength := 0
+
+	r1, _, _ := rsaDecryptProc.Call(
+		uintptr(unsafe.Pointer(&keyIDBytes[0])),
+		uintptr(unsafe.Pointer(&cipherBytes[0])),
+		uintptr(unsafe.Pointer(&message[0])),
+		uintptr(unsafe.Pointer(&messageLength)),
+	)
+
+	if r1 != 0 {
+		return false, "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	messageStr := string(message[:messageLength])
+
+	return true, messageStr, nil
+}
+
+func Sign(dll *syscall.DLL, keyID string, message string) (bool, string, error) {
+	signProc, err := dll.FindProc("rsa_sign")
+	if err != nil {
+		return false, "", err
+	}
+
+	keyIDBytes := make([]byte, 8)
+	copy(keyIDBytes, []byte(keyID))
+
+	messageBytes := []byte(message)
+	messageLength := len(messageBytes)
+
+	signature := make([]byte, 256)
+
+	r1, _, _ := signProc.Call(
+		uintptr(unsafe.Pointer(&keyIDBytes[0])),
+		uintptr(unsafe.Pointer(&messageBytes[0])),
+		uintptr(messageLength),
+		uintptr(unsafe.Pointer(&signature[0])),
+	)
+
+	if r1 != 0 {
+		return false, "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	signatureStr := base64.StdEncoding.EncodeToString(signature)
+
+	return true, signatureStr, nil
+}
+
+func Verify(dll *syscall.DLL, keyID string, message string, signature string) (bool, bool, error) {
+	verifyProc, err := dll.FindProc("rsa_verify")
+	if err != nil {
+		return false, false, err
+	}
+
+	keyIDBytes := make([]byte, 8)
+	copy(keyIDBytes, []byte(keyID))
+
+	messageBytes := []byte(message)
+	messageLength := len(messageBytes)
+
+	signatureBytes, err := base64.StdEncoding.DecodeString(signature)
+	if err != nil {
+		return false, false, err
+	}
+
+	var result byte
+
+	r1, _, _ := verifyProc.Call(
+		uintptr(unsafe.Pointer(&keyIDBytes[0])),
+		uintptr(unsafe.Pointer(&messageBytes[0])),
+		uintptr(messageLength),
+		uintptr(unsafe.Pointer(&signatureBytes[0])),
+		uintptr(unsafe.Pointer(&result)),
+	)
+
+	if r1 != 0 {
+		return false, false, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	return true, result == 1, nil
+}
+
+func DeleteKey(dll *syscall.DLL, keyID string) (bool, error) {
+	deleteKeyProc, err := dll.FindProc("delete_rsa_key")
+	if err != nil {
+		return false, err
+	}
+
+	keyIDBytes := make([]byte, 8)
+	copy(keyIDBytes, []byte(keyID))
+
+	r1, _, _ := deleteKeyProc.Call(
+		uintptr(unsafe.Pointer(&keyIDBytes[0])),
+	)
+
+	if r1 != 0 {
+		return false, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	return true, nil
+}
+
 func ListKeys(dll *syscall.DLL) (bool, uint8, []string, []string, error) {
 	listKeysProc, err := dll.FindProc("list_all_key_ids")
 	if err != nil {
@@ -161,4 +346,19 @@ func ListKeys(dll *syscall.DLL) (bool, uint8, []string, []string, error) {
 	}
 
 	return true, keyCount, keyIDList, customIDList, nil
+}
+
+func ResetKeys(dll *syscall.DLL) (bool, error) {
+	resetKeysProc, err := dll.FindProc("reset_all_keys")
+	if err != nil {
+		return false, err
+	}
+
+	r1, _, _ := resetKeysProc.Call()
+
+	if r1 != 0 {
+		return false, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	return true, nil
 }
