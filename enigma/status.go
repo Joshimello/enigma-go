@@ -43,3 +43,22 @@ func Detect(dll *syscall.DLL) (bool, error) {
 
 	return true, nil
 }
+
+func UID(dll *syscall.DLL) (bool, string, error) {
+	uidProc, err := dll.FindProc("GetChipSN")
+	if err != nil {
+		return false, "", err
+	}
+
+	r1, _, _ := uidProc.Call()
+	if r1 == 0 {
+		return false, "", fmt.Errorf("failed to get UID")
+	}
+
+	var bytes [16]byte
+	ptr := (*[16]byte)(unsafe.Pointer(r1))
+	copy(bytes[:], ptr[:])
+
+	uid := fmt.Sprintf("%x", bytes)
+	return true, uid, nil
+}

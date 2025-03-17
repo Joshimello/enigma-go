@@ -48,11 +48,18 @@ func main() {
 			return context.WithValue(ctx, "enigma-context", enigmaContext), nil
 		},
 		Commands: []*cli.Command{
-			commands.ListKeys(),
+			// status
 			commands.Version(),
 			commands.DetectDevice(),
+			commands.UID(),
+
+			// pin
 			commands.LoginStatus(),
 			commands.Login(),
+			commands.ChangePin(),
+
+			// rsa
+			commands.ListKeys(),
 		},
 		After: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)

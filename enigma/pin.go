@@ -48,7 +48,36 @@ func Login(dll *syscall.DLL, pin string) (bool, error) {
 
 	pinBytes := append([]byte(pin), 0)
 
-	r1, _, _ := loginProc.Call(uintptr(unsafe.Pointer(&pinBytes[0])))
+	r1, _, _ := loginProc.Call(
+		uintptr(unsafe.Pointer(&pinBytes[0])),
+	)
+
+	if r1 != 0 {
+		return false, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	return true, nil
+}
+
+func ChangePin(dll *syscall.DLL, oldPin string, newPin string) (bool, error) {
+
+	res, err := Login(dll, oldPin)
+	if !res {
+		return false, err
+	}
+
+	changePinProc, err := dll.FindProc("mxChangePIN")
+	if err != nil {
+		return false, err
+	}
+
+	newPinBytes := append([]byte(newPin), 0)
+	newPinBytesPointer := uintptr(unsafe.Pointer(&newPinBytes[0]))
+
+	r1, _, _ := changePinProc.Call(
+		newPinBytesPointer,
+		newPinBytesPointer,
+	)
 
 	if r1 != 0 {
 		return false, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
