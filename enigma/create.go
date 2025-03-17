@@ -6,8 +6,8 @@ import (
 	"syscall"
 )
 
-func Create() (*syscall.DLL, error) {
-	dll, err := syscall.LoadDLL("library/EnovaMX.dll")
+func Create(dllPath string) (*syscall.DLL, error) {
+	dll, err := syscall.LoadDLL(dllPath)
 	if err != nil {
 		return nil, err
 	}

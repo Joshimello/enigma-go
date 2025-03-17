@@ -18,7 +18,7 @@ func main() {
 	cmd := &cli.Command{
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 
-			dll, err := enigma.Create()
+			dll, err := enigma.Create("library/EnovaMX.dll")
 			if err != nil {
 				result := &types.EnigmaResponse{
 					Status:  "error",
