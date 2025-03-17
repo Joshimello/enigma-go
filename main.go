@@ -67,7 +67,16 @@ func main() {
 			commands.AESDecryptFile(),
 
 			// rsa
+			commands.GenerateKey(),
+			commands.ImportKey(),
+			commands.SetTransKey(),
+			commands.RSAEncrypt(),
+			commands.RSADecrypt(),
+			commands.Sign(),
+			commands.Verify(),
+			commands.DeleteKey(),
 			commands.ListKeys(),
+			commands.ResetKeys(),
 		},
 		After: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
