@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/joshimello/enigma-go/enigma"
 	"github.com/joshimello/enigma-go/types"
@@ -16,7 +15,7 @@ import (
 func AESEncryptFile() *cli.Command {
 	return &cli.Command{
 		Name:      "aes-encrypt-file",
-		ArgsUsage: "<source-file-path> <target-directory>",
+		ArgsUsage: "<source-folder-path> <file-path> <target-folder-path>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
 			if !ok {
@@ -24,42 +23,20 @@ func AESEncryptFile() *cli.Command {
 				os.Exit(1)
 			}
 
-			sourceFilePath := cmd.Args().Get(0)
-			targetDirectory := cmd.Args().Get(1)
+			sourceFolderPath := cmd.Args().Get(0)
+			filePath := cmd.Args().Get(1)
+			targetFolderPath := cmd.Args().Get(2)
 
-			if sourceFilePath == "" || targetDirectory == "" {
+			if sourceFolderPath == "" || filePath == "" || targetFolderPath == "" {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",
-					Message: "Source file path and target directory are required arguments",
+					Message: "Source, file and target folder paths are required arguments",
 					Data:    nil,
 				}
 				return nil
 			}
 
-			if _, err := os.Stat(sourceFilePath); os.IsNotExist(err) {
-				enigmaContext.Result = &types.EnigmaResponse{
-					Status:  "error",
-					Message: "Source file does not exist",
-					Data:    nil,
-				}
-				return nil
-			}
-
-			if _, err := os.Stat(targetDirectory); os.IsNotExist(err) {
-				if err := os.MkdirAll(targetDirectory, 0755); err != nil {
-					enigmaContext.Result = &types.EnigmaResponse{
-						Status:  "error",
-						Message: "Failed to create target directory: " + err.Error(),
-						Data:    nil,
-					}
-					return nil
-				}
-			}
-
-			sourceDir := filepath.Dir(sourceFilePath)
-			fileName := "./" + filepath.Base(sourceFilePath)
-
-			err := enigma.AESEncryptFile(enigmaContext.DLL, sourceDir, fileName, targetDirectory)
+			err := enigma.AESEncryptFile(enigmaContext.DLL, sourceFolderPath, filePath, targetFolderPath)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",
@@ -69,14 +46,10 @@ func AESEncryptFile() *cli.Command {
 				return nil
 			}
 
-			targetFilePath := filepath.Join(targetDirectory, filepath.Base(sourceFilePath)+".emx")
-
 			enigmaContext.Result = &types.EnigmaResponse{
 				Status:  "success",
 				Message: enigma.GetCodeMessage(0),
-				Data: map[string]any{
-					"encrypted_file": targetFilePath,
-				},
+				Data:    nil,
 			}
 
 			return nil
