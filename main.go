@@ -40,6 +40,8 @@ func main() {
 				os.Exit(1)
 			}
 
+			res, _, _, err = enigma.LoginStatus(dll)
+
 			enigmaContext := &types.EnigmaContext{
 				DLL:    dll,
 				Result: nil,
@@ -57,6 +59,12 @@ func main() {
 			commands.LoginStatus(),
 			commands.Login(),
 			commands.ChangePin(),
+
+			// aes
+			commands.AESEncrypt(),
+			commands.AESDecrypt(),
+			commands.AESEncryptFile(),
+			commands.AESDecryptFile(),
 
 			// rsa
 			commands.ListKeys(),
