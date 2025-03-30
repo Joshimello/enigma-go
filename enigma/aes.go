@@ -31,15 +31,25 @@ func ISO9797_1_Method2Unpadding(data []byte) []byte {
 }
 
 func AESEncrypt(dll *syscall.DLL, inputStr string) (string, error) {
-	encryptProc, err := dll.FindProc("AESStreamEncDec")
+	paddedData := ISO9797_1_Method2Padding([]byte(inputStr), 16)
+	encryptedBytes, err := AESEncryptBytes(dll, paddedData)
 	if err != nil {
 		return "", err
 	}
 
-	data := []byte(inputStr)
-	paddedData := ISO9797_1_Method2Padding(data, 16)
+	// return hex.EncodeToString(encryptedBytes[:len(paddedData)]), nil
+	return string(encryptedBytes[:len(paddedData)]), nil
+}
 
-	requiredSectors := (len(paddedData) + sectorSize - 1) / sectorSize
+func AESEncryptBytes(dll *syscall.DLL, inputData []byte) ([]byte, error) {
+	encryptProc, err := dll.FindProc("AESStreamEncDec")
+	if err != nil {
+		return nil, err
+	}
+
+	paddedData := ISO9797_1_Method2Padding(inputData, 16)
+
+	requiredSectors := (len(inputData) + sectorSize - 1) / sectorSize
 	bufferSize := requiredSectors * sectorSize
 
 	inputBuffer := make([]byte, bufferSize)
@@ -54,26 +64,23 @@ func AESEncrypt(dll *syscall.DLL, inputStr string) (string, error) {
 	)
 
 	if r1 != 0 {
-		return "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+		return nil, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
 
-	// return hex.EncodeToString(outputBuffer[:len(paddedData)]), nil
-	return string(outputBuffer[:len(paddedData)]), nil
+	return outputBuffer[:len(paddedData)], nil
 }
 
-func AESDecrypt(dll *syscall.DLL, inputStr string) (string, error) {
+func AESDecryptBytes(dll *syscall.DLL, inputData []byte) ([]byte, error) {
 	decryptProc, err := dll.FindProc("AESStreamEncDec")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	data := []byte(inputStr)
-
-	requiredSectors := (len(data) + sectorSize - 1) / sectorSize
+	requiredSectors := (len(inputData) + sectorSize - 1) / sectorSize
 	bufferSize := requiredSectors * sectorSize
 
 	inputBuffer := make([]byte, bufferSize)
-	copy(inputBuffer, data)
+	copy(inputBuffer, inputData)
 	outputBuffer := make([]byte, bufferSize)
 
 	r1, _, _ := decryptProc.Call(
@@ -84,12 +91,21 @@ func AESDecrypt(dll *syscall.DLL, inputStr string) (string, error) {
 	)
 
 	if r1 != 0 {
-		return "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+		return nil, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
 
-	unpaddedData := ISO9797_1_Method2Unpadding(outputBuffer[:len(data)])
+	unpaddedData := ISO9797_1_Method2Unpadding(outputBuffer[:len(inputData)])
 
-	return string(unpaddedData), nil
+	return unpaddedData, nil
+}
+
+func AESDecrypt(dll *syscall.DLL, inputStr string) (string, error) {
+	decryptedBytes, err := AESDecryptBytes(dll, []byte(inputStr))
+	if err != nil {
+		return "", err
+	}
+
+	return string(decryptedBytes), nil
 }
 
 func AESEncryptFile(dll *syscall.DLL, sourceFilePath, sourceFileName, targetPath string) error {
