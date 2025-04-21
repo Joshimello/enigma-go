@@ -197,18 +197,16 @@ func RSADecrypt(dll *syscall.DLL, keyID string, cipher string) (bool, string, er
 	return true, messageStr, nil
 }
 
-func Sign(dll *syscall.DLL, keyID string, message string) (bool, string, error) {
+func SignBytes(dll *syscall.DLL, keyID string, messageBytes []byte) (bool, []byte, error) {
 	signProc, err := dll.FindProc("rsa_sign")
 	if err != nil {
-		return false, "", err
+		return false, nil, err
 	}
 
 	keyIDBytes := make([]byte, 8)
 	copy(keyIDBytes, []byte(keyID))
 
-	messageBytes := []byte(message)
 	messageLength := len(messageBytes)
-
 	signature := make([]byte, 256)
 
 	r1, _, _ := signProc.Call(
@@ -219,11 +217,19 @@ func Sign(dll *syscall.DLL, keyID string, message string) (bool, string, error) 
 	)
 
 	if r1 != 0 {
-		return false, "", fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+		return false, nil, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
 
-	signatureStr := base64.StdEncoding.EncodeToString(signature)
+	return true, signature[:messageLength], nil
+}
 
+func Sign(dll *syscall.DLL, keyID string, message string) (bool, string, error) {
+	messageBytes := []byte(message)
+	ok, signature, err := SignBytes(dll, keyID, messageBytes)
+	if err != nil || !ok {
+		return false, "", err
+	}
+	signatureStr := base64.StdEncoding.EncodeToString(signature)
 	return true, signatureStr, nil
 }
 

@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"testing"
 
@@ -143,6 +144,38 @@ func TestRSASign(t *testing.T) {
 	}
 
 	fmt.Println("Signature is valid")
+}
+
+func TestRSASignBytes(t *testing.T) {
+	dll := InitTestLibrary(t)
+
+	testString := RandomString(256)
+	fmt.Println("Test String:", testString)
+
+	// Use Sign function
+	resSign, signatureString, errSign := enigma.Sign(dll, "enova-00", testString)
+	if !resSign || errSign != nil {
+		t.Error("Sign function failed:", errSign)
+		t.FailNow()
+	}
+	fmt.Println("Signature (String):", signatureString)
+
+	// Use SignBytes function
+	resSignBytes, signatureBytes, errSignBytes := enigma.SignBytes(dll, "enova-00", []byte(testString))
+	if !resSignBytes || errSignBytes != nil {
+		t.Error("SignBytes function failed:", errSignBytes)
+		t.FailNow()
+	}
+	signatureBytesBase64 := base64.StdEncoding.EncodeToString(signatureBytes)
+	fmt.Println("Signature (Bytes):", signatureBytesBase64)
+
+	// Compare results
+	if signatureString != signatureBytesBase64 {
+		t.Error("Sign and SignBytes produced different results")
+		t.FailNow()
+	}
+
+	fmt.Println("Sign and SignBytes produced equivalent results")
 }
 
 func TestRSAResetKeys(t *testing.T) {
