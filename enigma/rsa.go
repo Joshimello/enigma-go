@@ -220,7 +220,7 @@ func SignBytes(dll *syscall.DLL, keyID string, messageBytes []byte) (bool, []byt
 		return false, nil, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
 
-	return true, signature[:messageLength], nil
+	return true, signature, nil
 }
 
 func Sign(dll *syscall.DLL, keyID string, message string) (bool, string, error) {
