@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"syscall"
 
 	"github.com/joshimello/enigma-go/commands"
 	"github.com/joshimello/enigma-go/enigma"
@@ -17,8 +18,49 @@ import (
 func main() {
 	cmd := &cli.Command{
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
+			// Check if this is an XMSS command
+			cmdName := ""
+			if len(os.Args) > 1 {
+				cmdName = os.Args[1]
+			}
 
-			dll, err := enigma.Create("library/EnovaMX.dll")
+			isXMSSCommand := false
+			xmssCommands := []string{"xmss-keygen", "xmss-sign", "xmss-verify", "xmss-param"}
+			for _, c := range xmssCommands {
+				if cmdName == c {
+					isXMSSCommand = true
+					break
+				}
+			}
+
+			var dll *syscall.DLL
+			var err error
+
+			if isXMSSCommand {
+				// Use XMSS-specific DLL
+				dll, err = enigma.Create("library/mxpxmss.dll")
+			} else {
+				// Use standard EnovaMX DLL
+				dll, err = enigma.Create("library/EnovaMX.dll")
+
+				if err == nil {
+					// Only perform these checks for non-XMSS commands
+					res, err := enigma.Detect(dll)
+					if err != nil && res == false {
+						result := &types.EnigmaResponse{
+							Status:  "error",
+							Message: err.Error(),
+						}
+						jsonResult, _ := json.Marshal(result)
+						fmt.Println(string(jsonResult))
+						os.Exit(1)
+					}
+
+					// Check login status for standard operations
+					_, _, _, _ = enigma.LoginStatus(dll)
+				}
+			}
+
 			if err != nil {
 				result := &types.EnigmaResponse{
 					Status:  "error",
@@ -28,19 +70,6 @@ func main() {
 				fmt.Println(string(jsonResult))
 				os.Exit(1)
 			}
-
-			res, err := enigma.Detect(dll)
-			if err != nil && res == false {
-				result := &types.EnigmaResponse{
-					Status:  "error",
-					Message: err.Error(),
-				}
-				jsonResult, _ := json.Marshal(result)
-				fmt.Println(string(jsonResult))
-				os.Exit(1)
-			}
-
-			res, _, _, err = enigma.LoginStatus(dll)
 
 			enigmaContext := &types.EnigmaContext{
 				DLL:    dll,
@@ -77,6 +106,12 @@ func main() {
 			commands.DeleteKey(),
 			commands.ListKeys(),
 			commands.ResetKeys(),
+
+			// xmss
+			commands.XMSSKeyGen(),
+			commands.XMSSSign(),
+			commands.XMSSVerify(),
+			commands.XMSSParam(),
 		},
 		After: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
