@@ -55,6 +55,7 @@ func XMSSKeyGen() *cli.Command {
 
 			// Parse OID from hex string to byte array
 			oidStr := cmd.String("oid")
+
 			oidBytes, err := hex.DecodeString(oidStr)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
@@ -65,10 +66,22 @@ func XMSSKeyGen() *cli.Command {
 				return nil
 			}
 
+			var oidFinal [4]byte
+			if len(oidBytes) != 4 {
+				enigmaContext.Result = &types.EnigmaResponse{
+					Status:  "error",
+					Message: "OID must be 4 bytes",
+					Data:    nil,
+				}
+				return nil
+			}
+
+			copy(oidFinal[:], oidBytes)
+
 			skeyFile := cmd.String("secret-key")
 			pkeyFile := cmd.String("public-key")
 
-			err = enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, oidBytes, skeyFile, pkeyFile)
+			err = enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, oidFinal, skeyFile, pkeyFile)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",

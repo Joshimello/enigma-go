@@ -68,7 +68,7 @@ func XMSSGetParam(dll *syscall.DLL) (*XMSSParam, error) {
 	return out, nil
 }
 
-func XMSSKeyGen(dll *syscall.DLL, isXMSSMT byte, oid []byte, skeyFile string, pkeyFile string) error {
+func XMSSKeyGen(dll *syscall.DLL, isXMSSMT byte, oid [4]byte, skeyFile string, pkeyFile string) error {
 	proc, err := dll.FindProc("XmssKeyGen")
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func XMSSKeyGen(dll *syscall.DLL, isXMSSMT byte, oid []byte, skeyFile string, pk
 
 	r1, _, _ := proc.Call(
 		uintptr(isXMSSMT),
-		uintptr(unsafe.Pointer(&oid[0])),
+		uintptr(unsafe.Pointer(&oid)),
 		uintptr(unsafe.Pointer(skPtr)),
 		uintptr(unsafe.Pointer(pkPtr)),
 	)
