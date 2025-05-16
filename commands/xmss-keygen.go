@@ -4,7 +4,6 @@ package commands
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -53,35 +52,10 @@ func XMSSKeyGen() *cli.Command {
 				isXMSSMT = 1
 			}
 
-			// Parse OID from hex string to byte array
-			oidStr := cmd.String("oid")
-
-			oidBytes, err := hex.DecodeString(oidStr)
-			if err != nil {
-				enigmaContext.Result = &types.EnigmaResponse{
-					Status:  "error",
-					Message: fmt.Sprintf("Error parsing oid: %v", err),
-					Data:    nil,
-				}
-				return nil
-			}
-
-			var oidFinal [4]byte
-			if len(oidBytes) != 4 {
-				enigmaContext.Result = &types.EnigmaResponse{
-					Status:  "error",
-					Message: "OID must be 4 bytes",
-					Data:    nil,
-				}
-				return nil
-			}
-
-			copy(oidFinal[:], oidBytes)
-
 			skeyFile := cmd.String("secret-key")
 			pkeyFile := cmd.String("public-key")
 
-			err = enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, oidFinal, skeyFile, pkeyFile)
+			err := enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, "XMSS-SHA2_10_256", skeyFile, pkeyFile)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",
