@@ -16,30 +16,12 @@ func XMSSKeyGen() *cli.Command {
 	return &cli.Command{
 		Name:  "xmss-keygen",
 		Usage: "Generate XMSS key pair",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "mt",
-				Usage: "Use XMSS-MT (multi-tree) variant",
-			},
-			&cli.StringFlag{
-				Name:    "oid",
-				Aliases: []string{"o"},
-				Usage:   "OID value for XMSS parameter set (4 bytes in hex format)",
-				Value:   "00000001",
-			},
-			&cli.StringFlag{
-				Name:    "secret-key",
-				Aliases: []string{"sk"},
-				Usage:   "Secret key file path",
-				Value:   "xmss_secret.key",
-			},
-			&cli.StringFlag{
-				Name:    "public-key",
-				Aliases: []string{"pk"},
-				Usage:   "Public key file path",
-				Value:   "xmss_public.key",
-			},
-		},
+		ArgsUsage: "<isXMSSMT> <method> <secretKeyFile> <publicKeyFile>",
+		Description: "Generate XMSS key pair using specified parameters.\n" +
+			"   isXMSSMT: Use 0/false or 1/true to specify XMSS-MT variant\n" +
+			"   method: XMSS method string (e.g., XMSS-SHA2_10_256)\n" +
+			"   secretKeyFile: Path to save the secret key\n" +
+			"   publicKeyFile: Path to save the public key",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
 			if !ok {
@@ -47,15 +29,20 @@ func XMSSKeyGen() *cli.Command {
 				os.Exit(1)
 			}
 
-			isXMSSMT := byte(0)
-			if cmd.Bool("mt") {
-				isXMSSMT = 1
+			args := cmd.Args().Slice()
+			if len(args) < 4 {
+				return fmt.Errorf("missing required arguments: isXMSSMT method secretKeyPath publicKeyPath")
 			}
 
-			skeyFile := cmd.String("secret-key")
-			pkeyFile := cmd.String("public-key")
+			// Parse isXMSSMT from the first arg
+			isXMSSMT := args[0] == "1" || args[0] == "true"
+			
+			// Get the method, secret key path, and public key path
+			method := args[1]
+			skeyFile := args[2]
+			pkeyFile := args[3]
 
-			err := enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, "XMSS-SHA2_10_256", skeyFile, pkeyFile)
+			err := enigma.XMSSKeyGen(enigmaContext.DLL, isXMSSMT, method, skeyFile, pkeyFile)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",
