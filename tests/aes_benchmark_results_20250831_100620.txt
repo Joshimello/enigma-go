@@ -1,0 +1,20 @@
+=== AES CRYPTOGRAPHIC BENCHMARK RESULTS ===
+Test runs: 100 iterations per test
+Test date: 2025-08-31 10:06:20
+
+Operation            Data Size    Total Time (s)  Avg Time (ms)   Status    
+-------------------- ------------ --------------- --------------- ----------
+AES Stream Enc       10 B         0.048           0.483           SUCCESS   
+AES Stream Enc       500 B        0.041           0.414           SUCCESS   
+AES Stream Enc       1 KB         0.050           0.501           SUCCESS   
+AES Stream Enc       5 KB         0.049           0.493           SUCCESS   
+AES Stream Enc       10 KB        0.056           0.561           SUCCESS   
+AES Stream Enc       100 KB       0.373           3.732           SUCCESS   
+AES Stream Enc       1 MB         3.535           35.354          SUCCESS   
+AES Stream Dec       10 B         0.052           0.519           SUCCESS   
+AES Stream Dec       500 B        0.051           0.514           SUCCESS   
+AES Stream Dec       1 KB         0.048           0.478           SUCCESS   
+AES Stream Dec       5 KB         0.055           0.548           SUCCESS   
+AES Stream Dec       10 KB        0.053           0.533           SUCCESS   
+AES Stream Dec       100 KB       0.421           4.208           SUCCESS   
+AES Stream Dec       1 MB         3.627           36.274          SUCCESS   

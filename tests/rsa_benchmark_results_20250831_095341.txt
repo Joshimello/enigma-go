@@ -1,0 +1,22 @@
+=== RSA CRYPTOGRAPHIC BENCHMARK RESULTS ===
+Test runs: 10 iterations per test
+Test date: 2025-08-31 09:53:41
+
+Operation            Data Size    Total Time (s)  Avg Time (ms)   Status    
+-------------------- ------------ --------------- --------------- ----------
+RSA Enc              10 B         1.559           155.885         SUCCESS   
+RSA Enc              500 B        0.115           11.466          SUCCESS   
+RSA Enc              1 KB         0.118           11.783          SUCCESS   
+RSA Enc              5 KB         1.557           155.657         SUCCESS   
+RSA Enc              10 KB        1.552           155.156         SUCCESS   
+RSA Enc              100 KB       1.560           156.001         SUCCESS   
+RSA Enc              1 MB         1.580           158.032         SUCCESS   
+RSA Dec              10 B         4.997           499.742         SUCCESS   
+RSA Dec              500 B        5.005           500.522         SUCCESS   
+RSA Dec              1 KB         5.005           500.463         SUCCESS   
+RSA Dec              5 KB         5.019           501.871         SUCCESS   
+RSA Dec              10 KB        5.015           501.484         SUCCESS   
+RSA Dec              100 KB       5.003           500.332         SUCCESS   
+RSA Dec              1 MB         5.008           500.830         SUCCESS   
+RSA Sign             190 B        5.018           501.837         SUCCESS   
+RSA Verify           190 B        1.557           155.657         SUCCESS   
