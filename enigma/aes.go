@@ -132,6 +132,69 @@ func AESEncryptFile(dll *syscall.DLL, sourceFilePath, sourceFileName, targetPath
 	return nil
 }
 
+func AESEncryptBlock(dll *syscall.DLL, plaintext [16]byte) ([16]byte, error) {
+	encryptProc, err := dll.FindProc("AESStreamEncDec")
+	if err != nil {
+		return [16]byte{}, err
+	}
+
+	// Create 512-byte buffers (one sector)
+	inputBuffer := make([]byte, sectorSize)
+	outputBuffer := make([]byte, sectorSize)
+
+	// Copy the 16-byte block to the beginning of the input buffer
+	copy(inputBuffer[:16], plaintext[:])
+	// The rest of the buffer will be zeros
+
+	r1, _, _ := encryptProc.Call(
+		uintptr(unsafe.Pointer(&inputBuffer[0])),
+		uintptr(unsafe.Pointer(&outputBuffer[0])),
+		uintptr(1), // 1 sector
+		uintptr(1), // 1 = encrypt
+	)
+
+	if r1 != 0 {
+		return [16]byte{}, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	// Extract the first 16 bytes from the output
+	var result [16]byte
+	copy(result[:], outputBuffer[:16])
+	return result, nil
+}
+
+// AESDecryptBlock decrypts a single 16-byte AES block using the HSM
+func AESDecryptBlock(dll *syscall.DLL, ciphertext [16]byte) ([16]byte, error) {
+	decryptProc, err := dll.FindProc("AESStreamEncDec")
+	if err != nil {
+		return [16]byte{}, err
+	}
+
+	// Create 512-byte buffers (one sector)
+	inputBuffer := make([]byte, sectorSize)
+	outputBuffer := make([]byte, sectorSize)
+
+	// Copy the 16-byte block to the beginning of the input buffer
+	copy(inputBuffer[:16], ciphertext[:])
+	// The rest of the buffer will be zeros
+
+	r1, _, _ := decryptProc.Call(
+		uintptr(unsafe.Pointer(&inputBuffer[0])),
+		uintptr(unsafe.Pointer(&outputBuffer[0])),
+		uintptr(1), // 1 sector
+		uintptr(0), // 0 = decrypt
+	)
+
+	if r1 != 0 {
+		return [16]byte{}, fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
+	}
+
+	// Extract the first 16 bytes from the output
+	var result [16]byte
+	copy(result[:], outputBuffer[:16])
+	return result, nil
+}
+
 func AESDecryptFile(dll *syscall.DLL, sourceFilePath, sourceFileName, targetPath string) error {
 	fileAESProc, err := dll.FindProc("FileAES")
 	if err != nil {
