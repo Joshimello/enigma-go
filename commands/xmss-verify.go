@@ -15,7 +15,7 @@ import (
 func XMSSVerify() *cli.Command {
 	return &cli.Command{
 		Name:      "xmss-verify",
-		ArgsUsage: "<public-key-file> <signature-file>",
+		ArgsUsage: "<public-key-file> <signature-file> <message-file>",
 		Usage:     "Verify a signature using XMSS algorithm",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			enigmaContext, ok := ctx.Value("enigma-context").(*types.EnigmaContext)
@@ -26,17 +26,18 @@ func XMSSVerify() *cli.Command {
 
 			pkeyFile := cmd.Args().Get(0)
 			sigFile := cmd.Args().Get(1)
+			msgFile := cmd.Args().Get(2)
 
-			if pkeyFile == "" || sigFile == "" {
+			if pkeyFile == "" || sigFile == "" || msgFile == "" {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",
-					Message: "Public key file and signature file paths are required as arguments",
+					Message: "Public key file, signature file, and message file paths are required as arguments",
 					Data:    nil,
 				}
 				return nil
 			}
 
-			err := enigma.XMSSVerify(enigmaContext.DLL, pkeyFile, sigFile)
+			err := enigma.XMSSVerify(enigmaContext.DLL, pkeyFile, sigFile, msgFile)
 			if err != nil {
 				enigmaContext.Result = &types.EnigmaResponse{
 					Status:  "error",

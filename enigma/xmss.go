@@ -112,7 +112,7 @@ func XMSSKeyGen(dll *syscall.DLL, isXMSSMT bool, oidStr string, skeyFile string,
 	if isXMSSMT {
 		isXMSSMTByte = 1
 	}
-	
+
 	r1, _, _ := proc.Call(
 		uintptr(isXMSSMTByte),
 		uintptr(unsafe.Pointer(oidPtr)),
@@ -170,16 +170,16 @@ func XMSSSign(dll *syscall.DLL, skeyFile, msgFile, sigFile string) error {
 		XMSSCloseHandle(dll) // Close handle even on error
 		return fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
-	
+
 	err = XMSSCloseHandle(dll)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
-func XMSSVerify(dll *syscall.DLL, pkeyFile, sigFile string) error {
+func XMSSVerify(dll *syscall.DLL, pkeyFile, sigFile, msgFile string) error {
 	proc, err := dll.FindProc("XmssVerify")
 	if err != nil {
 		return err
@@ -200,20 +200,28 @@ func XMSSVerify(dll *syscall.DLL, pkeyFile, sigFile string) error {
 		XMSSCloseHandle(dll) // Close handle even on error
 		return err
 	}
+	msgPtr, err := syscall.BytePtrFromString(msgFile)
+	if err != nil {
+		XMSSCloseHandle(dll) // Close handle even on error
+		return err
+	}
 
 	r1, _, _ := proc.Call(
 		uintptr(unsafe.Pointer(pkPtr)),
 		uintptr(unsafe.Pointer(sigPtr)),
+		uintptr(unsafe.Pointer(msgPtr)),
 	)
+	// print r1
+	fmt.Println(uint8(r1))
 	if r1 != 0 {
 		XMSSCloseHandle(dll) // Close handle even on error
 		return fmt.Errorf("%s", GetCodeMessage(uint8(r1)))
 	}
-	
+
 	err = XMSSCloseHandle(dll)
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
